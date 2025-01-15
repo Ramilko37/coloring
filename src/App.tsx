@@ -1,19 +1,33 @@
-import { ColoringCanvas } from "@/components/ColoringCanvas";
-import { ColorModeButton } from "@/components/ui/color-mode";
+import { useMemo, useState } from "react";
+import { MainLayout } from "./components/MainLayout";
+import { Home } from "./pages/Home";
+
+enum PageContentEnum {
+  Home = "Home",
+  Gallery = "Gallery",
+  New = "New",
+  Settings = "Settings",
+}
 
 function App() {
-  return (
-    <div className="min-h-screen p-8">
-      <header className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">AI Coloring App</h1>
-        <ColorModeButton />
-      </header>
-
-      <main className="flex justify-center">
-        <ColoringCanvas />
-      </main>
-    </div>
+  const [pageContent, setPageContent] = useState<PageContentEnum>(
+    PageContentEnum.Home,
   );
+
+  const handleNavigate = (page: string) => {
+    setPageContent(page as PageContentEnum);
+  };
+
+  const currentPageContent = useMemo(() => {
+    switch (pageContent) {
+      case PageContentEnum.Home:
+        return <Home onNavigate={handleNavigate} />;
+      default:
+        return <></>;
+    }
+  }, [pageContent]);
+
+  return <MainLayout>{currentPageContent}</MainLayout>;
 }
 
 export default App;
