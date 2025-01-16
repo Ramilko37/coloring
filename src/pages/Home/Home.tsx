@@ -1,30 +1,36 @@
 import homeImage from "@/assets/images/home-img.webp";
 import { Button } from "@/components/ui/button";
+import { AppModeEnum } from "@/types";
 import { Flex, Image, Text } from "@chakra-ui/react";
 import { AiFillCaretRight } from "react-icons/ai";
 import { CiSettings } from "react-icons/ci";
 import { TfiGallery } from "react-icons/tfi";
 
 interface HomeProps {
-  onNavigate?: (page: string) => void;
+  onNavigate?: (page: AppModeEnum) => void;
 }
 
 export const Home = ({ onNavigate }: HomeProps) => {
   const settings = [
     {
+      name: "Editor",
+      icon: <AiFillCaretRight />,
+      onClick: () => onNavigate?.(AppModeEnum.Editor),
+    },
+    {
       name: "New",
       icon: <AiFillCaretRight />,
-      onClick: () => onNavigate?.("New"),
+      onClick: () => onNavigate?.(AppModeEnum.New),
     },
     {
       name: "Gallery",
       icon: <TfiGallery />,
-      onClick: () => onNavigate?.("Gallery"),
+      onClick: () => onNavigate?.(AppModeEnum.Gallery),
     },
     {
       name: "Settings",
       icon: <CiSettings />,
-      onClick: () => onNavigate?.("Settings"),
+      onClick: () => onNavigate?.(AppModeEnum.Settings),
     },
   ];
 
@@ -52,7 +58,12 @@ export const Home = ({ onNavigate }: HomeProps) => {
         gap={"16px"}
       >
         {settings.map((item) => (
-          <Button variant={"surface"} h={"56px"} key={item.name}>
+          <Button
+            variant={"surface"}
+            h={"56px"}
+            key={item.name}
+            onClick={item.onClick}
+          >
             {item.icon}
             {item.name}
           </Button>

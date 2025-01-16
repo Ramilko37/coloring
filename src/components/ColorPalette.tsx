@@ -29,8 +29,11 @@ export function ColorPalette({ baseColor, onColorSelect }: ColorPaletteProps) {
         <Button
           key={index}
           onClick={() => onColorSelect(color)}
-          className="w-8 h-8 p-0"
-          style={{ backgroundColor: color }}
+          className="w-8 h-8 p-0 border-2"
+          style={{
+            backgroundColor: color,
+            borderColor: adjustBorderColor(color),
+          }}
         />
       ))}
     </div>
@@ -117,4 +120,11 @@ function hslToHex(h: number, s: number, l: number): string {
   };
 
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function adjustBorderColor(color: string): string {
+  const hsl = hexToHSL(color);
+  // Make border darker for light colors, lighter for dark colors
+  const newL = hsl.l < 0.5 ? hsl.l + 0.2 : hsl.l - 0.2;
+  return hslToHex(hsl.h, hsl.s, newL);
 }

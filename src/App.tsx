@@ -1,31 +1,30 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { MainLayout } from "./components/MainLayout";
+import { Editor } from "./pages/Editor/Editor";
 import { Home } from "./pages/Home";
-
-enum PageContentEnum {
-  Home = "Home",
-  Gallery = "Gallery",
-  New = "New",
-  Settings = "Settings",
-}
+import { useAppDispatch, useAppSelector } from "./store";
+import { setAppMode } from "./store/slices/applicationSlice";
+import { AppModeEnum } from "./types";
 
 function App() {
-  const [pageContent, setPageContent] = useState<PageContentEnum>(
-    PageContentEnum.Home,
-  );
-
-  const handleNavigate = (page: string) => {
-    setPageContent(page as PageContentEnum);
+  const dispatch = useAppDispatch();
+  const appMode = useAppSelector((state) => state.application.appMode);
+  const handleNavigate = (page: AppModeEnum) => {
+    console.log("page", page);
+    dispatch(setAppMode(page));
   };
 
   const currentPageContent = useMemo(() => {
-    switch (pageContent) {
-      case PageContentEnum.Home:
+    switch (appMode) {
+      case AppModeEnum.Home:
         return <Home onNavigate={handleNavigate} />;
+
+      case AppModeEnum.Editor:
+        return <Editor />;
       default:
         return <></>;
     }
-  }, [pageContent]);
+  }, [appMode]);
 
   return <MainLayout>{currentPageContent}</MainLayout>;
 }
