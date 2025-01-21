@@ -1,4 +1,4 @@
-import { Button } from "./ui/button";
+import Button from "@mui/material/Button";
 
 interface ColorPaletteProps {
   baseColor: string;
@@ -24,7 +24,7 @@ export function ColorPalette({ baseColor, onColorSelect }: ColorPaletteProps) {
   const colors = generateHarmoniousColors(baseColor);
 
   return (
-    <div className="flex gap-2">
+    <div className="Box gap-2">
       {colors.map((color, index) => (
         <Button
           key={index}

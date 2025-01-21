@@ -1,8 +1,7 @@
 import { ColorPalette } from "@/components/ColorPalette";
-import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/store";
 import { setPainting } from "@/store/slices/editorSlice";
-import { Flex } from "@chakra-ui/react";
+import { Box, Button, Stack } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import CanvasDraw from "react-canvas-draw";
 
@@ -57,28 +56,27 @@ export function Editor() {
   }, []);
 
   return (
-    <Flex direction="column" gap={4} w="100%" h="100%" bgColor={"beige"}>
+    <Stack bgcolor="beige" height="100%" p="24px" border="1px solid red">
       <CanvasDraw
         brushColor={currentDrawState.selectedColor}
         brushRadius={currentDrawState.brushSize}
         hideGrid={true}
         hideInterface={true}
-        canvasWidth={500}
-        style={{ height: "90dvh" }}
+        style={{ width: "100%", height: "80dvh" }}
         imgSrc={currentDrawState.imageUrl}
         onChange={saveCanvasState}
       />
-      <Flex direction={"column"} gap={2}>
+      <Stack border="1px solid red" direction="column" gap={2}>
         <ColorPalette
           baseColor={currentDrawState.selectedColor}
           onColorSelect={handleColorSelect}
         />
-        <Flex gap={2}>
+        <Box gap={2}>
           <Button onClick={handleUndo}>Undo</Button>
           <Button onClick={handleRedo}>Redo</Button>
           <Button onClick={saveCanvasState}>Save State</Button>
-        </Flex>
-      </Flex>
-    </Flex>
+        </Box>
+      </Stack>
+    </Stack>
   );
 }

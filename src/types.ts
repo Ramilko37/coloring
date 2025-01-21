@@ -1,7 +1,8 @@
 export enum AppModeEnum {
   Home = "Home",
   Editor = "Editor",
-  Gallery = "Gallery",
+  Favorites = "Favorites",
+  Profile = "Profile",
   New = "New",
   Settings = "Settings",
 }
