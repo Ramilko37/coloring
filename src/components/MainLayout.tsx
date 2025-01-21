@@ -52,12 +52,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   const appMode = useAppSelector((state) => state.application.appMode);
 
   return (
-    <Stack
-      direction="column"
-      width="100%"
-      height="100dvh"
-      border="1px solid red"
-    >
+    <Stack direction="column" width="100vw">
       <Stack
         bgcolor="#FEE034"
         position="relative"
@@ -76,8 +71,9 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
           dispatch(setAppMode(newValue));
         }}
         sx={{
+          width: "100%",
           borderTop: "1px solid #e0e0e0",
-          padding: "16px 8px 16px",
+          overflow: "hidden",
         }}
       >
         {navBarItems.map((item) => (
