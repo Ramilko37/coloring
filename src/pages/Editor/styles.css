@@ -1,0 +1,13 @@
+.color-picker .react-colorful {
+  width: 100%;
+  height: 250px;
+  padding-bottom: 16px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.color-picker .react-colorful__last-control {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  height: 30px;
+}

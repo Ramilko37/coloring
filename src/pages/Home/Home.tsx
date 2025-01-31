@@ -37,6 +37,7 @@ export const Home = ({ onNavigate }: HomeProps) => {
 
   return (
     <Stack
+      height="100%"
       direction="column"
       p="24px"
       justifyContent="flex-start"
@@ -48,8 +49,14 @@ export const Home = ({ onNavigate }: HomeProps) => {
         <Image src={homeImage} alt="new" />
       </Stack>
 
-      <Stack width="100%" direction="column" spacing={2} flexWrap="wrap">
-        <Grid container spacing={2}>
+      <Stack
+        width="100%"
+        direction="column"
+        spacing={2}
+        flexWrap="wrap"
+        justifyContent="center"
+      >
+        <Grid container spacing={2} justifyContent="center">
           {settings.map((setting) => (
             <Grid key={setting.name}>
               <Paper
