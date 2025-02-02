@@ -8,4 +8,9 @@ export default defineConfig({
   optimizeDeps: {
     include: ["@chakra-ui/icons"],
   },
+  server: {
+    port: 3000,
+    open: true,
+    allowedHosts: true,
+  },
 });
