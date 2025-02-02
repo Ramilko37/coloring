@@ -59,7 +59,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
       <BottomNavigation
         showLabels
         value={appMode}
-        onChange={(event, newValue) => {
+        onChange={(_, newValue) => {
           dispatch(setAppMode(newValue));
         }}
         sx={{
