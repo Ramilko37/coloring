@@ -135,6 +135,8 @@ export const Editor = () => {
   }, [image, size]);
 
   const handleMouseDown = (e: any) => {
+    // Prevent default touch behavior
+    e.evt.preventDefault();
     setIsDrawing(true);
     const pos = e.target.getStage().getPointerPosition();
     setLines([
@@ -143,22 +145,20 @@ export const Editor = () => {
         points: [pos.x, pos.y],
         color: selectedColor,
         tool,
-        brushSize: brushSize, // Store current brush size with the line
+        brushSize,
       },
     ]);
   };
 
   const handleMouseMove = (e: any) => {
+    // Prevent default touch behavior
+    e.evt.preventDefault();
     if (!isDrawing) return;
 
     const stage = e.target.getStage();
     const point = stage.getPointerPosition();
     const lastLine = lines[lines.length - 1];
-
-    // Add point to line while maintaining its original properties
     lastLine.points = lastLine.points.concat([point.x, point.y]);
-
-    // Replace last line
     lines.splice(lines.length - 1, 1, lastLine);
     setLines([...lines]);
   };
@@ -172,7 +172,16 @@ export const Editor = () => {
   };
 
   return (
-    <Stack ref={containerRef} height="100%" width="100%" position="relative">
+    <Stack
+      ref={containerRef}
+      height="100%"
+      width="100%"
+      position="relative"
+      sx={{
+        touchAction: "none", // Prevent touch scrolling
+        overscrollBehavior: "none", // Prevent bounce effects
+      }}
+    >
       <Stack
         bgcolor={"#FEE034"}
         direction="row"
@@ -197,7 +206,7 @@ export const Editor = () => {
       </Stack>
       <Stage
         width={size.width}
-        height={size.height - 150}
+        height={size.height}
         onMouseDown={handleMouseDown}
         onMousemove={handleMouseMove}
         onMouseup={handleMouseUp}
@@ -205,7 +214,10 @@ export const Editor = () => {
         onTouchmove={handleMouseMove}
         onTouchend={handleMouseUp}
         ref={stageRef}
-        style={{ backgroundColor: "white" }}
+        style={{
+          backgroundColor: "white",
+          touchAction: "none",
+        }}
       >
         {/* Separate layer for the background image */}
         <Layer>

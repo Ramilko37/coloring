@@ -47,15 +47,10 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   const appMode = useAppSelector((state) => state.application.appMode);
 
   return (
-    <Stack direction="column" width="100vw" height="100vh">
-      <Stack
-        bgcolor="#FEE034"
-        position="relative"
-        alignItems="flex-start"
-        px="16px"
-        height="40px"
-      />
-      {children}
+    <Stack direction="column" width="100vw" height="100dvh">
+      <Stack flex={1} overflow="scroll">
+        {children}
+      </Stack>
       <BottomNavigation
         showLabels
         value={appMode}

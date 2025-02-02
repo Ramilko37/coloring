@@ -37,16 +37,26 @@ export const Home = ({ onNavigate }: HomeProps) => {
 
   return (
     <Stack
-      height="100%"
       direction="column"
       p="24px"
       justifyContent="flex-start"
       alignItems="center"
       spacing={3}
     >
-      <Stack width={"100%"} direction="column" gap="24px">
-        <Typography variant="h3">New</Typography>
-        <Image src={homeImage} alt="new" />
+      <Stack
+        width={"100%"}
+        direction="column"
+        textAlign="center"
+        alignItems="center"
+        gap="24px"
+      >
+        <Typography variant="h3">Color Book</Typography>
+        <Image
+          height="20dvh"
+          src={homeImage}
+          alt="new"
+          style={{ objectFit: "contain" }}
+        />
       </Stack>
 
       <Stack
