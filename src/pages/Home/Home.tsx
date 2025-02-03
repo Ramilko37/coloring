@@ -19,6 +19,11 @@ export const Home = ({ onNavigate }: HomeProps) => {
       onClick: () => onNavigate?.(AppModeEnum.Editor),
     },
     {
+      name: "SVG Editor",
+      icon: <AiFillCaretRight />,
+      onClick: () => onNavigate?.(AppModeEnum.SVGEditor),
+    },
+    {
       name: "New",
       icon: <AiFillCaretRight />,
       onClick: () => onNavigate?.(AppModeEnum.New),

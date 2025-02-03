@@ -1,7 +1,8 @@
+import { Editor } from "@/pages/Editor/Editor";
 import { useMemo } from "react";
 import { MainLayout } from "./components/MainLayout";
-import { Editor } from "./pages/Editor/Editor";
 import { Home } from "./pages/Home";
+import { SVGEditor } from "./pages/SVGEditor/SVGEditor";
 import { useAppDispatch, useAppSelector } from "./store";
 import { setAppMode } from "./store/slices/applicationSlice";
 import { AppModeEnum } from "./types";
@@ -20,7 +21,9 @@ function App() {
         return <Home onNavigate={handleNavigate} />;
 
       case AppModeEnum.Editor:
-        return <Editor />;
+        return <Editor isSvg={false} />;
+      case AppModeEnum.SVGEditor:
+        return <SVGEditor />;
       default:
         return <></>;
     }

@@ -1,9 +1,9 @@
 export enum AppModeEnum {
   Home = "Home",
   Editor = "Editor",
+  SVGEditor = "SVGEditor",
+  New = "New",
   Favorites = "Favorites",
   Profile = "Profile",
-  New = "New",
   Settings = "Settings",
-  SVGEditor = "SVGEditor",
 }
