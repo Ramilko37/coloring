@@ -14,10 +14,17 @@ import {
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { HexColorPicker } from "react-colorful";
-import { AiOutlineZoomIn, AiOutlineZoomOut } from "react-icons/ai";
-import { FaBrush, FaEraser, FaPen } from "react-icons/fa";
-import { Image as KonvaImage, Layer, Line, Stage } from "react-konva";
+import {
+  FaArrowsAlt,
+  FaBrush,
+  FaEraser,
+  FaPen,
+  FaRedo,
+  FaUndo,
+} from "react-icons/fa";
+import { Line } from "react-konva";
 import useImage from "use-image";
+import { DrawStage } from "./DrawStage";
 import "./styles.css";
 
 interface Line {
@@ -32,7 +39,6 @@ interface EditorProps {
 }
 
 export const Editor = ({ isSvg = false }: EditorProps) => {
-  const stageRef = useRef<any>(null);
   const [lines, setLines] = useState<Line[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [selectedColor, setSelectedColor] = useState("#000000");
@@ -47,29 +53,26 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
   const [hasUnclosedPaths, setHasUnclosedPaths] = useState(false);
   const [scale, setScale] = useState(1);
   const [lastTapTime, setLastTapTime] = useState(0);
-  const [showUndoFeedback, setShowUndoFeedback] = useState(false);
+  const [showActionFeedback, setShowActionFeedback] = useState<
+    "Undo" | "Redo" | null
+  >(null);
+  const [redoStack, setRedoStack] = useState<Line[]>([]);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [mode, setMode] = useState<"draw" | "move">("draw");
 
   const touchStartRef = useRef<{
     x: number;
     y: number;
     distance: number | null;
+    lastCenter: { x: number; y: number } | null;
   }>({
     x: 0,
     y: 0,
     distance: null,
+    lastCenter: null,
   });
 
   const controlButtons = [
-    {
-      label: "Zoom In",
-      icon: <AiOutlineZoomIn size={24} />,
-      handler: () => setScale((prev) => Math.min(prev + 0.1, 3)),
-    },
-    {
-      label: "Zoom Out",
-      icon: <AiOutlineZoomOut size={24} />,
-      handler: () => setScale((prev) => Math.max(prev - 0.1, 0.5)),
-    },
     {
       label: "Brush",
       icon: <FaBrush />,
@@ -89,6 +92,22 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
       isActive: tool === "pen",
     },
     {
+      label: "Undo",
+      icon: <FaUndo />,
+      handler: () => {
+        handleUndo();
+      },
+      isActive: false,
+    },
+    {
+      label: "Redo",
+      icon: <FaRedo />,
+      handler: () => {
+        handleRedo();
+      },
+      isActive: false,
+    },
+    {
       label: "Eraser",
       icon: <FaEraser />,
       handler: () => {
@@ -101,6 +120,12 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
       label: "Active Color",
       icon: <ActiveColorIcon fill={selectedColor} />,
       handler: () => setShowColorPicker(true),
+    },
+    {
+      label: mode === "draw" ? "Move" : "Draw",
+      icon: mode === "draw" ? <FaArrowsAlt /> : <FaPen />,
+      handler: () => setMode(mode === "draw" ? "move" : "draw"),
+      isActive: false,
     },
   ];
 
@@ -149,7 +174,8 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
   }, [image, size, scale]);
 
   const handleMouseDown = (e: any) => {
-    // Prevent default touch behavior
+    if (mode !== "draw") return;
+
     e.evt.preventDefault();
     setIsDrawing(true);
     const pos = e.target.getStage().getPointerPosition();
@@ -162,10 +188,12 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
         brushSize,
       },
     ]);
+    setRedoStack([]); // Clear redo stack when new line is drawn
   };
 
   const handleMouseMove = (e: any) => {
-    // Prevent default touch behavior
+    if (mode !== "draw") return;
+
     e.evt.preventDefault();
     if (!isDrawing) return;
 
@@ -192,30 +220,73 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
     return Math.sqrt(dx * dx + dy * dy);
   };
 
+  const getCenter = (touches: TouchList) => ({
+    x: (touches[0].clientX + touches[1].clientX) / 2,
+    y: (touches[0].clientY + touches[1].clientY) / 2,
+  });
+
   const handleTouchStart = (e: TouchEvent) => {
+    if (mode !== "move") return;
+
     if (e.touches.length === 2) {
       e.preventDefault();
       const distance = getTouchDistance(e.touches[0], e.touches[1]);
+      const center = getCenter(e.touches);
       touchStartRef.current = {
-        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+        x: center.x,
+        y: center.y,
         distance,
+        lastCenter: center,
+      };
+    } else if (e.touches.length === 1) {
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        distance: null,
+        lastCenter: null,
       };
     }
   };
 
   const handleTouchMove = (e: TouchEvent) => {
+    if (mode !== "move") return;
+
     if (e.touches.length === 2 && touchStartRef.current.distance !== null) {
       e.preventDefault();
       const newDistance = getTouchDistance(e.touches[0], e.touches[1]);
-      const delta = newDistance / touchStartRef.current.distance;
+      const center = getCenter(e.touches);
 
+      // Handle zoom
+      const delta = newDistance / touchStartRef.current.distance;
       setScale((prevScale) => {
         const newScale = prevScale * delta;
         return Math.min(Math.max(newScale, 0.5), 3);
       });
 
+      // Handle pan with two fingers
+      if (touchStartRef.current.lastCenter) {
+        const deltaX = center.x - touchStartRef.current.lastCenter.x;
+        const deltaY = center.y - touchStartRef.current.lastCenter.y;
+        setPosition((prev) => ({
+          x: prev.x + deltaX,
+          y: prev.y + deltaY,
+        }));
+      }
+
       touchStartRef.current.distance = newDistance;
+      touchStartRef.current.lastCenter = center;
+    } else if (e.touches.length === 1) {
+      // Handle pan with one finger
+      const deltaX = e.touches[0].clientX - touchStartRef.current.x;
+      const deltaY = e.touches[0].clientY - touchStartRef.current.y;
+
+      setPosition((prev) => ({
+        x: prev.x + deltaX,
+        y: prev.y + deltaY,
+      }));
+
+      touchStartRef.current.x = e.touches[0].clientX;
+      touchStartRef.current.y = e.touches[0].clientY;
     }
   };
 
@@ -287,9 +358,21 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
   };
 
   const handleUndo = () => {
+    if (lines.length === 0) return;
+    const lastLine = lines[lines.length - 1];
+    setRedoStack((prev) => [...prev, lastLine]);
     setLines((prev) => prev.slice(0, -1));
-    setShowUndoFeedback(true);
-    setTimeout(() => setShowUndoFeedback(false), 500);
+    setShowActionFeedback("Undo");
+    setTimeout(() => setShowActionFeedback(null), 500);
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    const lineToRedo = redoStack[redoStack.length - 1];
+    setLines((prev) => [...prev, lineToRedo]);
+    setRedoStack((prev) => prev.slice(0, -1));
+    setShowActionFeedback("Redo");
+    setTimeout(() => setShowActionFeedback(null), 500);
   };
 
   const handleStageTouch = (e: any) => {
@@ -314,6 +397,17 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
     });
   };
 
+  // Update Stage component props
+  const stageProps = {
+    ...stageSize,
+    x: position.x,
+    y: position.y,
+    draggable: mode === "move", // Only allow dragging in move mode
+    onDragEnd: (e: any) => {
+      setPosition({ x: e.target.x(), y: e.target.y() });
+    },
+  };
+
   return (
     <Stack
       ref={containerRef}
@@ -326,7 +420,7 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
         overscrollBehavior: "none",
       }}
     >
-      <Fade in={showUndoFeedback}>
+      <Fade in={!!showActionFeedback}>
         <Typography
           sx={{
             position: "absolute",
@@ -341,7 +435,7 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
             zIndex: 1000,
           }}
         >
-          Undo
+          {showActionFeedback}
         </Typography>
       </Fade>
 
@@ -385,61 +479,18 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
           </IconButton>
         ))}
       </Stack>
-      <Stage
-        width={size.width}
-        height={size.height}
-        onMouseDown={handleMouseDown}
-        onMousemove={handleMouseMove}
-        onMouseup={handleMouseUp}
-        onTouchstart={handleMouseDown}
-        onTouchmove={handleMouseMove}
-        onTouchend={(e: any) => {
-          handleMouseUp();
-          handleStageTouch(e);
-        }}
-        ref={stageRef}
-        style={{
-          backgroundColor: "white",
-          touchAction: "none",
-        }}
-      >
-        {/* Separate layer for the background image */}
-        <Layer>
-          {!isSvg && image && (
-            <KonvaImage
-              image={image}
-              width={imageSize.width}
-              height={imageSize.height}
-              x={(size.width - imageSize.width) / 2}
-              y={(size.height - imageSize.height) / 2}
-              listening={false}
-            />
-          )}
-        </Layer>
 
-        {/* Separate layer for drawings */}
-        <Layer>
-          {lines.map((line, i) => (
-            <Line
-              key={i}
-              points={getScaledPoints(line.points, 1 / scale)}
-              stroke={line.color}
-              strokeWidth={line.brushSize / scale}
-              tension={0.5}
-              lineCap={line.tool === "brush" ? "round" : "round"}
-              lineJoin="round"
-              globalCompositeOperation={
-                line.tool === "eraser" ? "destination-out" : "source-over"
-              }
-              opacity={line.tool === "brush" ? 0.5 : 1}
-              dash={line.tool === "brush" ? undefined : undefined}
-              shadowColor={line.tool === "brush" ? line.color : undefined}
-              shadowBlur={line.tool === "brush" ? 4 : 0}
-              shadowOpacity={line.tool === "brush" ? 0.3 : 0}
-            />
-          ))}
-        </Layer>
-      </Stage>
+      <DrawStage
+        image={image}
+        imageSize={imageSize}
+        size={size}
+        lines={lines}
+        setLines={setLines}
+        selectedColor={selectedColor}
+        tool={tool}
+        brushSize={brushSize}
+        mode={mode}
+      />
 
       {/* Brush settings */}
       <Stack
@@ -471,70 +522,6 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
           </Button>
         )}
       </Stack>
-
-      <Box
-        ref={containerRef}
-        flex={1}
-        onWheel={handleWheel}
-        sx={{
-          touchAction: "none",
-          overflow: "hidden",
-        }}
-      >
-        <Stage
-          {...stageSize}
-          onMouseDown={handleMouseDown}
-          onMousemove={handleMouseMove}
-          onMouseup={handleMouseUp}
-          onTouchstart={handleMouseDown}
-          onTouchmove={handleMouseMove}
-          onTouchend={(e: any) => {
-            handleMouseUp();
-            handleStageTouch(e);
-          }}
-          ref={stageRef}
-          style={{
-            backgroundColor: "white",
-          }}
-        >
-          {/* Background Image Layer */}
-          <Layer>
-            {image && (
-              <KonvaImage
-                image={image}
-                width={imageSize.width}
-                height={imageSize.height}
-                x={(size.width / scale - imageSize.width) / 2}
-                y={(size.height / scale - imageSize.height) / 2}
-                listening={false}
-              />
-            )}
-          </Layer>
-
-          {/* Drawing Layer */}
-          <Layer>
-            {lines.map((line, i) => (
-              <Line
-                key={i}
-                points={getScaledPoints(line.points, 1 / scale)}
-                stroke={line.color}
-                strokeWidth={line.brushSize / scale}
-                tension={0.5}
-                lineCap={line.tool === "brush" ? "round" : "round"}
-                lineJoin="round"
-                globalCompositeOperation={
-                  line.tool === "eraser" ? "destination-out" : "source-over"
-                }
-                opacity={line.tool === "brush" ? 0.5 : 1}
-                dash={line.tool === "brush" ? undefined : undefined}
-                shadowColor={line.tool === "brush" ? line.color : undefined}
-                shadowBlur={line.tool === "brush" ? 4 : 0}
-                shadowOpacity={line.tool === "brush" ? 0.3 : 0}
-              />
-            ))}
-          </Layer>
-        </Stage>
-      </Box>
 
       <Drawer
         anchor="bottom"
