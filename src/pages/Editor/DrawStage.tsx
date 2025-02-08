@@ -155,8 +155,9 @@ export const DrawStage = forwardRef<any, DrawStageProps>(
     return (
       <TransformWrapper
         initialScale={1}
-        initialPositionX={200}
-        initialPositionY={100}
+        initialPositionX={0}
+        initialPositionY={0}
+        disabled={mode === "draw"}
       >
         <TransformComponent>
           <Stage
@@ -164,13 +165,14 @@ export const DrawStage = forwardRef<any, DrawStageProps>(
             onMouseDown={handleMouseDown}
             onMousemove={handleMouseMove}
             onMouseup={handleMouseUp}
-            onTouchstart={handleMouseDown}
-            onTouchmove={handleMouseMove}
+            onTouchstart={mode === "draw" ? handleMouseDown : handleTouchStart}
+            onTouchmove={mode === "draw" ? handleMouseMove : handleTouchMove}
             onTouchend={handleMouseUp}
             ref={ref}
             style={{
               backgroundColor: "white",
               touchAction: "none",
+              cursor: mode === "draw" ? "crosshair" : "grab",
             }}
           >
             <Layer>

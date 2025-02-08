@@ -10,8 +10,8 @@ import { AppModeEnum } from "./types";
 function App() {
   const dispatch = useAppDispatch();
   const appMode = useAppSelector((state) => state.application.appMode);
+
   const handleNavigate = (page: AppModeEnum) => {
-    console.log("page", page);
     dispatch(setAppMode(page));
   };
 

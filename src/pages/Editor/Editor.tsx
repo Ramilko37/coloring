@@ -38,34 +38,48 @@ interface EditorProps {
   isSvg?: boolean;
 }
 
+interface startRefInterface {
+  x: number;
+  y: number;
+  distance: number | null;
+  lastCenter: { x: number; y: number } | null;
+}
+
+const navBarColorsArray = [
+  "#FF0000", // Red
+  "#FF7F00", // Orange
+  "#FFFF00", // Yellow
+  "#00FF00", // Green
+  "#0000FF", // Blue
+  "#4B0082", // Indigo
+  "#9400D3", // Violet
+];
+
 export const Editor = ({ isSvg = false }: EditorProps) => {
   const [lines, setLines] = useState<Line[]>([]);
-  const [isDrawing, setIsDrawing] = useState(false);
   const [selectedColor, setSelectedColor] = useState("#000000");
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [tool, setTool] = useState<"brush" | "pen" | "eraser">("pen");
-  const [showBrushSize, setShowBrushSize] = useState(false);
+  const [showToolSize, setShowToolSize] = useState(false);
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const [brushSize, setBrushSize] = useState(5);
+  const [toolSize, setToolSize] = useState(5);
   const containerRef = useRef<HTMLDivElement>(null);
   const [image] = useImage(mockImage);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [hasUnclosedPaths, setHasUnclosedPaths] = useState(false);
   const [scale, setScale] = useState(1);
-  const [lastTapTime, setLastTapTime] = useState(0);
   const [showActionFeedback, setShowActionFeedback] = useState<
     "Undo" | "Redo" | null
   >(null);
   const [redoStack, setRedoStack] = useState<Line[]>([]);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [mode, setMode] = useState<"draw" | "move">("draw");
+  const [navbarColor] = useState(
+    () =>
+      navBarColorsArray[Math.floor(Math.random() * navBarColorsArray.length)],
+  );
 
-  const touchStartRef = useRef<{
-    x: number;
-    y: number;
-    distance: number | null;
-    lastCenter: { x: number; y: number } | null;
-  }>({
+  const touchStartRef = useRef<startRefInterface>({
     x: 0,
     y: 0,
     distance: null,
@@ -78,7 +92,7 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
       icon: <FaBrush />,
       handler: () => {
         setTool("brush");
-        setBrushSize(20);
+        setToolSize(20);
       },
       isActive: tool === "brush",
     },
@@ -87,7 +101,7 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
       icon: <FaPen />,
       handler: () => {
         setTool("pen");
-        setBrushSize(5);
+        setToolSize(5);
       },
       isActive: tool === "pen",
     },
@@ -112,7 +126,7 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
       icon: <FaEraser />,
       handler: () => {
         setTool("eraser");
-        setBrushSize(20);
+        setToolSize(20);
       },
       isActive: tool === "eraser",
     },
@@ -146,14 +160,6 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
-  // Update stage size with zoom
-  const stageSize = {
-    width: size.width,
-    height: size.height,
-    scaleX: scale,
-    scaleY: scale,
-  };
-
   // Calculate image dimensions considering zoom
   useEffect(() => {
     if (image && size.width && size.height) {
@@ -173,44 +179,8 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
     }
   }, [image, size, scale]);
 
-  const handleMouseDown = (e: any) => {
-    if (mode !== "draw") return;
-
-    e.evt.preventDefault();
-    setIsDrawing(true);
-    const pos = e.target.getStage().getPointerPosition();
-    setLines([
-      ...lines,
-      {
-        points: [pos.x, pos.y],
-        color: selectedColor,
-        tool,
-        brushSize,
-      },
-    ]);
-    setRedoStack([]); // Clear redo stack when new line is drawn
-  };
-
-  const handleMouseMove = (e: any) => {
-    if (mode !== "draw") return;
-
-    e.evt.preventDefault();
-    if (!isDrawing) return;
-
-    const stage = e.target.getStage();
-    const point = stage.getPointerPosition();
-    const lastLine = lines[lines.length - 1];
-    lastLine.points = lastLine.points.concat([point.x, point.y]);
-    lines.splice(lines.length - 1, 1, lastLine);
-    setLines([...lines]);
-  };
-
-  const handleMouseUp = () => {
-    setIsDrawing(false);
-  };
-
-  const handleBrushSizeChange = (e: any) => {
-    setBrushSize(e.target.value);
+  const handleToolSizeChange = (e: any) => {
+    setToolSize(e.target.value);
   };
 
   // Touch handlers for SVG zoom
@@ -345,18 +315,6 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
     loadContent();
   }, [isSvg]);
 
-  // Zoom controls
-  const handleZoom = (newScale: number) => {
-    setScale(Math.min(Math.max(newScale, 0.5), 3));
-  };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const scaleBy = 1.1;
-    const newScale = e.deltaY < 0 ? scale * scaleBy : scale / scaleBy;
-    handleZoom(newScale);
-  };
-
   const handleUndo = () => {
     if (lines.length === 0) return;
     const lastLine = lines[lines.length - 1];
@@ -373,39 +331,6 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
     setRedoStack((prev) => prev.slice(0, -1));
     setShowActionFeedback("Redo");
     setTimeout(() => setShowActionFeedback(null), 500);
-  };
-
-  const handleStageTouch = (e: any) => {
-    e.evt.preventDefault();
-    const currentTime = new Date().getTime();
-    const tapLength = currentTime - lastTapTime;
-
-    if (tapLength < 300 && tapLength > 0) {
-      handleUndo();
-    }
-    setLastTapTime(currentTime);
-  };
-
-  // Fix line coordinates to stay in place during zoom
-  const getScaledPoints = (points: number[], scale: number) => {
-    return points.map((point, i) => {
-      // Scale points relative to the center of the stage
-      const isX = i % 2 === 0;
-      const center = isX ? size.width / 2 : size.height / 2;
-      const scaledPoint = (point - center) * scale + center;
-      return scaledPoint;
-    });
-  };
-
-  // Update Stage component props
-  const stageProps = {
-    ...stageSize,
-    x: position.x,
-    y: position.y,
-    draggable: mode === "move", // Only allow dragging in move mode
-    onDragEnd: (e: any) => {
-      setPosition({ x: e.target.x(), y: e.target.y() });
-    },
   };
 
   return (
@@ -458,7 +383,7 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
       )}
 
       <Stack
-        bgcolor={"#FEE034"}
+        bgcolor={navbarColor}
         direction="row"
         justifyContent="space-between"
         alignItems="center"
@@ -488,7 +413,7 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
         setLines={setLines}
         selectedColor={selectedColor}
         tool={tool}
-        brushSize={brushSize}
+        brushSize={toolSize}
         mode={mode}
       />
 
@@ -500,17 +425,17 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
         position="absolute"
         bottom={0}
       >
-        {showBrushSize ? (
+        {showToolSize ? (
           <Slider
             min={1}
             max={100}
-            value={brushSize}
-            onChange={handleBrushSizeChange}
+            value={toolSize}
+            onChange={handleToolSizeChange}
           />
         ) : (
           <Button
             variant="contained"
-            onClick={() => setShowBrushSize(true)}
+            onClick={() => setShowToolSize(true)}
             sx={{
               borderRadius: "10px",
               backgroundColor: "#FFFAD6",
@@ -518,7 +443,7 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
               height: "50px",
             }}
           >
-            <Typography color="#000000">Line Size</Typography>
+            <Typography color="#000000">Tool Size</Typography>
           </Button>
         )}
       </Stack>
