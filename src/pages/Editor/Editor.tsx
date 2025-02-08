@@ -72,7 +72,7 @@ export const Editor = ({ isSvg = false }: EditorProps) => {
     "Undo" | "Redo" | null
   >(null);
   const [redoStack, setRedoStack] = useState<Line[]>([]);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [_, setPosition] = useState({ x: 0, y: 0 });
   const [mode, setMode] = useState<"draw" | "move">("draw");
   const [navbarColor] = useState(
     () =>
